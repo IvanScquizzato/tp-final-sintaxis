@@ -284,6 +284,7 @@ REG_EXPRESION ProcesarCte(void){
     /* Convierte cadena que representa numero a numero entero y construye un registro semantico */
     REG_EXPRESION reg;
     reg.clase = ENTERO;
+    reg.tipo = ENT;
     strcpy(reg.nombre, buffer);
     sscanf(buffer, "%d", &reg.valor);
     return reg;
@@ -292,6 +293,7 @@ REG_EXPRESION ProcesarCte(void){
 REG_EXPRESION ProcesarReal(void){
     REG_EXPRESION reg;
     reg.clase = REAL;
+    reg.tipo = REA;
     strcpy(reg.nombre, buffer);
     sscanf(buffer, "%f", &reg.valor);
     return reg;
@@ -543,7 +545,14 @@ TOKEN scanner(){
                 ungetc(car,in);
                 buffer[i-1] = '\0';
             }
-            return ENTERO;
+            int esReal = 0;
+            for(int j = 0; j < i; j++){
+                if(buffer[j] == '.'){
+                    esReal = 1;
+                    break;
+                }
+            }
+        return esReal ? REAL : ENTERO;
         case 5: return SUMA;
         case 6: return RESTA;
         case 7: return PARENIZQUIERDO;
