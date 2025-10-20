@@ -10,19 +10,23 @@
 /******************Declaraciones Globales*************************/
 FILE * in;
 typedef enum{
-    INICIO, FIN, LEER, ESCRIBIR, ID, CONSTANTE, PARENIZQUIERDO, PARENDERECHO, PUNTOYCOMA,
+    INICIO, FIN, LEER, ESCRIBIR, ID, TIPO, ENTERO, REAL, CARACTER, PARENIZQUIERDO, PARENDERECHO, PUNTOYCOMA,
     COMA, ASIGNACION, SUMA, RESTA, FDT, ERRORLEXICO
 } TOKEN;
-
+typedef enum{
+    ENT,REA,CAR
+}TipoDato;
 typedef struct{
     char identifi[TAMLEX];
     TOKEN t; /* t=0, 1, 2, 3 Palabra Reservada, t=ID=4 Identificador */
+    TipoDato tipo;
 } RegTS;
 
-RegTS TS[1000] = { {"inicio", INICIO}, {"fin", FIN}, {"leer", LEER}, {"escribir", ESCRIBIR}, {"$", 99} };
+RegTS TS[1000] = { {"inicio", INICIO}, {"fin", FIN}, {"leer", LEER}, {"escribir", ESCRIBIR}, {"ent",ENTERO},{"real",REAL},{"car",CARACTER},{"$", 99} };
 
 typedef struct{
     TOKEN clase;
+    TipoDato tipo;
     char nombre[TAMLEX];
     int valor;
 } REG_EXPRESION;
@@ -40,13 +44,13 @@ void Programa(void);
 void ListaSentencias(void);
 void Sentencia(void);
 void ListaIdentificadores(void);
-void Identificador(REG_EXPRESION * presul);
+void Identificador(REG_EXPRESION * presul,TipoDato tipo);
 void ListaExpresiones(void);
 void Expresion(REG_EXPRESION * presul);
 void Primaria(REG_EXPRESION * presul);
 void OperadorAditivo(char * presul);
 REG_EXPRESION ProcesarCte(void);
-REG_EXPRESION ProcesarId(void);
+REG_EXPRESION ProcesarId(TipoDato tipo);
 char * ProcesarOp(void);
 void Leer(REG_EXPRESION in);
 void Escribir(REG_EXPRESION out);
@@ -57,13 +61,20 @@ void ErrorLexico();
 void ErrorSintactico();
 void Generar(char * co, char * a, char * b, char * c);
 char * Extraer(REG_EXPRESION * preg);
-int Buscar(char * id, RegTS * TS, TOKEN * t);
-void Colocar(char * id, RegTS * TS);
-void Chequear(char * s);
+int Buscar(char * id, RegTS * TS, TOKEN * t,TipoDato* t2);
+void Colocar(char * id, RegTS * TS,TipoDato tipo);
+TOKEN Chequear(char * s, TipoDato tipo);
 void Comenzar(void);
 void Terminar(void);
 void Asignar(REG_EXPRESION izq, REG_EXPRESION der);
-
+REG_EXPRESION Caracter();
+REG_EXPRESION ProcesarReal(void);
+TipoDato ProcesarTipo(void);
+TipoDato DecidirTipo(REG_EXPRESION e1,REG_EXPRESION e2);
+void Tipo(TipoDato * presul);
+void CaracterOExpresion(REG_EXPRESION * presul);
+int CondicionInfijo(REG_EXPRESION e1,REG_EXPRESION e2);
+void ErrorSemantico();
 /***************************Programa Principal************************/
 int main(int argc, char * argv[]){
     TOKEN tok;
@@ -130,11 +141,17 @@ void ListaSentencias(void){
 void Sentencia(void){
     TOKEN tok = ProximoToken();
     REG_EXPRESION izq, der;
-    switch ( tok ){
-        case ID : /* <sentencia> -> ID := <expresion> #asignar ; (rutina semantica)*/
-            Identificador(&izq);
+    TipoDato tipo;
+    switch ( tok ){ 
+        case TIPO: /*<sentencia> -> <tipo> <identificador> ;*/
+            Tipo(&tipo);
+            Identificador(&der,tipo);
+            Match(PUNTOYCOMA);
+            break; 
+        case ID : /* <sentencia> -> ID := <caracterOExpresion>  #asignar ; (rutina semantica)*/
+            Identificador(&izq,ENT);
             Match(ASIGNACION);
-            Expresion(&der);
+            CaracterOExpresion(&der);
             Asignar(izq, der);
             Match(PUNTOYCOMA);
             break;
@@ -160,19 +177,23 @@ void ListaIdentificadores(void){
     /* <listaIdentificadores> -> <identificador> #leer_id {COMA <identificador> #leer_id} */
     TOKEN t;
     REG_EXPRESION reg;
-    Identificador(&reg);
+    Identificador(&reg,ENT);
     Leer(reg);
     for ( t = ProximoToken(); t == COMA; t = ProximoToken() ){
         Match(COMA);
-        Identificador(&reg);
+        Identificador(&reg,ENT);
         Leer(reg);
     }
 }
 
-void Identificador(REG_EXPRESION * presul){
+void Identificador(REG_EXPRESION * presul,TipoDato tipo){
     /* <identificador> -> ID #procesar_id */
     Match(ID);
-    *presul = ProcesarId();
+    *presul = ProcesarId(tipo);
+}
+void Tipo(TipoDato * presul){
+    Match(TIPO);
+    *presul = ProcesarTipo();
 }
 
 void ListaExpresiones(void){
@@ -202,15 +223,38 @@ void Expresion(REG_EXPRESION * presul){
     *presul = operandoIzq;
 }
 
+void CaracterOExpresion(REG_EXPRESION * presul){
+    /*<caracterOExpresion> -> uno de <expresion> <caracter>*/
+    TOKEN tok = ProximoToken();
+    if (tok==CAR){
+        Match(CARACTER);
+        *presul = Caracter();
+    }
+    else{
+        Expresion(presul);
+    }
+}
+
+REG_EXPRESION Caracter(){
+    REG_EXPRESION reg;
+    reg.clase=CARACTER;
+    strcpy(reg.nombre,buffer);
+    sscanf(buffer,"%c",&reg.valor);
+    return reg;
+}
 void Primaria(REG_EXPRESION * presul){
     TOKEN tok = ProximoToken();
     switch ( tok ){
     case ID : /* <primaria> -> <identificador> */
-        Identificador(presul);
+        Identificador(presul,ENT);
         break;
-    case CONSTANTE : /* <primaria> -> CONSTANTE #procesar_cte */
-        Match(CONSTANTE);
+    case ENTERO : /* <primaria> -> CONSTANTE #procesar_cte */
+        Match(ENTERO);
         *presul = ProcesarCte();
+        break;
+    case REAL:
+        Match(REAL);
+        *presul = ProcesarReal();
         break;
     case PARENIZQUIERDO : /* <primaria> -> PARENIZQUIERDO <expresion> PARENDERECHO */
         Match(PARENIZQUIERDO);
@@ -236,21 +280,34 @@ void OperadorAditivo(char * presul){
 REG_EXPRESION ProcesarCte(void){
     /* Convierte cadena que representa numero a numero entero y construye un registro semantico */
     REG_EXPRESION reg;
-    reg.clase = CONSTANTE;
+    reg.clase = ENTERO;
     strcpy(reg.nombre, buffer);
     sscanf(buffer, "%d", &reg.valor);
     return reg;
 }
 
-REG_EXPRESION ProcesarId(void){
+REG_EXPRESION ProcesarReal(void){
+    REG_EXPRESION reg;
+    reg.clase = REAL;
+    strcpy(reg.nombre, buffer);
+    sscanf(buffer, "%f", &reg.valor);
+    return reg;
+}
+REG_EXPRESION ProcesarId(TipoDato tipo){
     /* Declara ID y construye el correspondiente registro semantico */
     REG_EXPRESION reg;
-    Chequear(buffer);
     reg.clase = ID;
+    reg.tipo = Chequear(buffer,tipo);
     strcpy(reg.nombre, buffer);
     return reg;
 }
+TipoDato ProcesarTipo(void){
+    TipoDato tipo;
+    TOKEN tipoEnTS;
+    Buscar(buffer,TS,&tipoEnTS,&tipo);
+    return tipo;
 
+}
 char * ProcesarOp(void){
     /* Declara OP y construye el correspondiente registro semantico */
     return buffer;
@@ -268,6 +325,9 @@ void Escribir(REG_EXPRESION out){
 
 REG_EXPRESION GenInfijo(REG_EXPRESION e1, char * op, REG_EXPRESION e2){
     /* Genera la instruccion para una operacion infija y construye un registro semantico con el resultado*/
+    if (CondicionInfijo(e1,e2)==0){
+        ErrorSemantico();
+    }
     REG_EXPRESION reg;
     static unsigned int numTemp = 1;
     char cadTemp[TAMLEX] ="Temp&";
@@ -278,14 +338,59 @@ REG_EXPRESION GenInfijo(REG_EXPRESION e1, char * op, REG_EXPRESION e2){
     sprintf(cadNum, "%d", numTemp);
     numTemp++;
     strcat(cadTemp, cadNum);
-    if ( e1.clase == ID) Chequear(Extraer(&e1));
-    if ( e2.clase == ID) Chequear(Extraer(&e2));
-    Chequear(cadTemp);
+    if ( e1.clase==ID) Chequear(Extraer(&e1),e1.tipo);
+    if ( e2.clase == ID ) Chequear(Extraer(&e2),e2.tipo);
+    Chequear(cadTemp,DecidirTipo(e1,e2));
     Generar(cadOp, Extraer(&e1), Extraer(&e2), cadTemp);
     strcpy(reg.nombre, cadTemp);
     return reg;
 }
-
+TipoDato DecidirTipo(REG_EXPRESION e1,REG_EXPRESION e2){
+    if (e1.clase == ID){
+        return e1.tipo;
+    }
+    if (e2.clase== ID){
+        return e2.tipo;
+    }
+    if (e1.clase==ENTERO){
+        return ENT;
+    }
+    if (e1.clase == REAL){
+        return REA;
+    }
+}
+int CondicionInfijo(REG_EXPRESION e1,REG_EXPRESION e2){
+    if ((e1.clase==ID && e1.tipo==CAR) || (e2.clase==ID && e2.tipo==CAR)){
+        return 0;
+    }
+    if(e1.clase !=e2.clase){
+        if(e1.clase!=ID&&e2.clase!=ID){
+            return 0;
+        }
+        if (e1.clase == ID){
+            if (e1.tipo==ENT && e2.clase !=ENTERO){
+                return 0;
+            }
+            if (e1.tipo==REA && e2.clase !=REAL){
+                return 0;
+            }
+        }
+        if (e2.clase == ID){
+            if (e2.tipo==ENT && e1.clase !=ENTERO){
+                return 0;
+            }
+            if (e2.tipo==REA && e1.clase !=REAL){
+                return 0;
+            }
+        }
+    }
+    if (e1.clase==ID && e2.clase == ID){
+        if (e1.tipo!=e2.tipo){
+            return 0;
+        }
+    }
+    return 1;
+}
 /***************Funciones Auxiliares**********************************/
 void Match(TOKEN t){
     if ( !(t == ProximoToken()) ) ErrorSintactico();
@@ -297,8 +402,9 @@ TOKEN ProximoToken(){
         tokenActual = scanner();
         if ( tokenActual == ERRORLEXICO ) ErrorLexico();
         flagToken = 1;
-        if ( tokenActual == ID ){
-            Buscar(buffer, TS, &tokenActual);
+        if ( tokenActual == ID){
+            TipoDato t;
+            Buscar(buffer, TS, &tokenActual,&t);
         }
     }
     return tokenActual;
@@ -312,6 +418,9 @@ void ErrorSintactico(){
     printf("Error Sintactico\n");
 }
 
+void ErrorSemantico(){
+    printf("Error Semantico\n");
+}
 void Generar(char * co, char * a, char * b, char * c){
     /* Produce la salida de la instruccion para la MV por stdout */
     printf("%s %s%c%s%c%s\n", co, a, ',', b, ',', c);
@@ -322,12 +431,13 @@ char * Extraer(REG_EXPRESION * preg){
     return preg->nombre;
 }
 
-int Buscar(char * id, RegTS * TS, TOKEN * t){
+int Buscar(char * id, RegTS * TS, TOKEN * t,TipoDato* t2){
     /* Determina si un identificador esta en la TS */
     int i = 0;
     while ( strcmp("$", TS[i].identifi) ){
         if ( !strcmp(id, TS[i].identifi) ){
             *t = TS[i].t;
+            *t2 = TS[i].tipo;
             return 1;
         }
         i++;
@@ -335,25 +445,37 @@ int Buscar(char * id, RegTS * TS, TOKEN * t){
     return 0;
 }
 
-void Colocar(char * id, RegTS * TS){
+void Colocar(char * id, RegTS * TS,TipoDato tipo){
     /* Agrega un identificador a la TS */
     int i = 4;
     while ( strcmp("$", TS[i].identifi) ) i++;
     if ( i < 999 ){
         strcpy(TS[i].identifi, id );
         TS[i].t = ID;
+        TS[i].tipo = tipo;
         strcpy(TS[++i].identifi, "$" );
     }
 }
 
-void Chequear(char * s){
+TOKEN Chequear(char * s, TipoDato tipo){
     /* Si la cadena No esta en la Tabla de Simbolos la agrega,
     y si es el nombre de una variable genera la instruccion */
     TOKEN t;
-    if ( !Buscar(s, TS, &t) ){
-        Colocar(s, TS);
-        Generar("Declara", s, "Entera", "");
+    TipoDato tipo2;
+    if ( !Buscar(s, TS, &t,&tipo2) ){
+        Colocar(s, TS,tipo);
+        tipo2=tipo;
+        if (tipo == ENT){
+            Generar("Declara", s, "Entera", "");
+        }
+        else if (tipo == REAL){
+            Generar("Declara", s, "Real", "");
+        }
+        else if (tipo == CAR){
+            Generar("Declara", s, "Car", "");
+        }
     }
+    return tipo2;
 }
 
 void Comenzar(void){
@@ -367,6 +489,9 @@ void Terminar(void){
 
 void Asignar(REG_EXPRESION izq, REG_EXPRESION der){
     /* Genera la instruccion para la asignacion */
+    if ((izq.tipo==CAR&&der.clase!=CARACTER)||(izq.tipo==ENT&&der.clase!=ENTERO)||(izq.tipo==REA&&der.clase!=REAL)){
+        ErrorSemantico();
+    }
     Generar("Almacena", Extraer(&der), izq.nombre, "");
 }
 
@@ -415,7 +540,7 @@ TOKEN scanner(){
                 ungetc(car,in);
                 buffer[i-1] = '\0';
             }
-            return CONSTANTE;
+            return ENTERO;
         case 5: return SUMA;
         case 6: return RESTA;
         case 7: return PARENIZQUIERDO;
