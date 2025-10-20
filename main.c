@@ -10,10 +10,10 @@
 /******************Declaraciones Globales*************************/
 FILE * in;
 typedef enum{
-    INICIO, FIN, LEER, ESCRIBIR, ID, CONSTANTE, REALNUM, CARACTER, PARENIZQUIERDO,
+    INICIO, FIN, LEER, ESCRIBIR, ID, REALNUM, CARACTER, PARENIZQUIERDO,
     PARENDERECHO, PUNTOYCOMA, COMA, ASIGNACION, SUMA, RESTA, FDT, ERRORLEXICO, MIENTRAS,
     FINMIENTRAS, SI, FINSI, REPETIRHASTA, FINREPETIRHASTA, MENOR, MAYOR, IGUAL, MENORIGUAL,
-    MAYORIGUAL, IGUALDAD, TIPO_ENT, TIPO_REAL, TIPO_CAR
+    MAYORIGUAL, IGUALDAD, ENTERO, REAL
 } TOKEN;
 
 typedef struct{
@@ -22,7 +22,7 @@ typedef struct{
 } RegTS;
 
 RegTS TS[1000] = { {"inicio", INICIO}, {"fin", FIN}, {"leer", LEER}, {"escribir", ESCRIBIR}, {"mientras", MIENTRAS}, {"finMientras", FINMIENTRAS}, {"si", SI},
-                {"finSi", FINSI}, {"repetirHasta", REPETIRHASTA}, {"finRepetirHasta", FINREPETIRHASTA}, {"ent", TIPO_ENT}, {"real", TIPO_REAL}, {"car", TIPO_CAR},{"$", 99} };
+                {"finSi", FINSI}, {"repetirHasta", REPETIRHASTA}, {"finRepetirHasta", FINREPETIRHASTA}, {"ent", ENTERO}, {"real", REAL}, {"car", CARACTER},{"$", 99} };
 
 typedef struct{
     TOKEN clase;
