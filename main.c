@@ -6,8 +6,7 @@
 #define NUMCOLS 13
 #define TAMLEX 32+1
 #define TAMNOM 20+1
-#define SI 
-#define FINSI 
+
 
 /******************Declaraciones Globales*************************/
 FILE * in;
@@ -327,12 +326,32 @@ char * ProcesarOp(void){
 
 void Leer(REG_EXPRESION in){
     /* Genera la instruccion para leer */
-    Generar("Read", in.nombre, "Entera", "");
+    switch(in.tipo){
+        case ENT:
+            Generar("Read", in.nombre, "Entera", "");
+            break;
+        case CAR:
+            Generar("Read", in.nombre, "Caracter", "");
+            break;
+        case REA:
+            Generar("Read", in.nombre, "Real", "");
+            break;
+    }
 }
 
 void Escribir(REG_EXPRESION out){
     /* Genera la instruccion para escribir */
-    Generar("Write", Extraer(&out), "Entera", "");
+    switch(out.tipo){
+        case ENT:
+            Generar("Write", out.nombre, "Entera", "");
+            break;
+        case CAR:
+            Generar("Write", out.nombre, "Caracter", "");
+            break;
+        case REA:
+            Generar("Write", out.nombre, "Real", "");
+            break;
+    }
 }
 void Si(void){
     REG_EXPRESION cond;
