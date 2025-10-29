@@ -61,6 +61,7 @@ void Leer(REG_EXPRESION in);
 void Escribir(REG_EXPRESION out);
 void Pregunta(REG_EXPRESION * presul);
 void Si(void);
+void Mientras(void);
 REG_EXPRESION GenInfijo(REG_EXPRESION e1, char * op, REG_EXPRESION e2);
 void Match(TOKEN t);
 TOKEN ProximoToken();
@@ -137,7 +138,7 @@ void ListaSentencias(void){
     Sentencia();
     while ( 1 ){
         switch ( ProximoToken() ){
-            case ID : case LEER : case ESCRIBIR : case SI : case TIPO:
+            case ID : case LEER : case ESCRIBIR : case SI : case MIENTRAS : case TIPO:
             Sentencia();
             break;
             default : return;
@@ -179,7 +180,9 @@ void Sentencia(void){
         case SI: /* <sentencia> -> SI ( <expresion> ) <listaSentencias> FINSI */
             Si();
             break;
-        
+        case MIENTRAS: /* <sentencia> -> MIENTRAS <pregunta> ; <listaSentencias> FINMIENTRAS ; */
+            Mientras();
+            break;
         default : return;
     }
 }
@@ -414,6 +417,40 @@ void Si(void){
     /* Marca el final del bloque */
     Generar("Label", etiquetaFin, "", "");
 
+}
+
+void Mientras(void){
+    /* Gramática: MIENTRAS <pregunta> ; <listaSentencias> FINMIENTRAS ; */
+    REG_EXPRESION cond;
+    char etiquetaInicio[20], etiquetaFin[20];
+    static int numEtiqueta = 100; // A partir de 100 para Mientras
+
+    sprintf(etiquetaInicio, "L%d", numEtiqueta++);
+    sprintf(etiquetaFin, "L%d", numEtiqueta++);
+
+    Match(MIENTRAS);
+
+    /* Marca el inicio del ciclo */
+    Generar("Label", etiquetaInicio, "", "");
+
+    /* Evalúa la condición */
+    Pregunta(&cond);
+    Match(PUNTOYCOMA);
+
+    /* Si la condición es falsa, salta al final del bucle */
+    Generar("IfFalseGoto", Extraer(&cond), "", etiquetaFin);
+
+    /* Cuerpo del ciclo */
+    ListaSentencias();
+
+    Match(FINMIENTRAS);
+    Match(PUNTOYCOMA);
+
+     /* Salto al inicio del ciclo */
+    Generar("Goto", etiquetaInicio, "", "");
+
+    /* Marca el fin del ciclo */
+    Generar("Label", etiquetaFin, "", "");
 }
 
 REG_EXPRESION GenInfijo(REG_EXPRESION e1, char * op, REG_EXPRESION e2){

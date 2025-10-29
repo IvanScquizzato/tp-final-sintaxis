@@ -1,9 +1,8 @@
-inicio 
-leer(A);
-ent B;
-real h;
-car dd;
-escribir(h+h+A);
-B := 35;
-escribir(A+B);
+inicio
+ent x;
+leer(x);
+mientras(x>0);
+escribir(x);
+x := x - 1;
+finMientras;
 fin
