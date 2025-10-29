@@ -6,6 +6,8 @@
 #define NUMCOLS 13
 #define TAMLEX 32+1
 #define TAMNOM 20+1
+#define SI 
+#define FINSI 
 
 /******************Declaraciones Globales*************************/
 FILE * in;
@@ -57,6 +59,7 @@ REG_EXPRESION ProcesarId(TipoDato tipo);
 char * ProcesarOp(void);
 void Leer(REG_EXPRESION in);
 void Escribir(REG_EXPRESION out);
+void Si(void);
 REG_EXPRESION GenInfijo(REG_EXPRESION e1, char * op, REG_EXPRESION e2);
 void Match(TOKEN t);
 TOKEN ProximoToken();
@@ -133,7 +136,7 @@ void ListaSentencias(void){
     Sentencia();
     while ( 1 ){
         switch ( ProximoToken() ){
-            case ID : case LEER : case ESCRIBIR :
+            case ID : case LEER : case ESCRIBIR : case SI :
             Sentencia();
             break;
             default : return;
@@ -172,6 +175,10 @@ void Sentencia(void){
             Match(PARENDERECHO);
             Match(PUNTOYCOMA);
             break;
+        case SI: /* <sentencia> -> SI ( <expresion> ) <listaSentencias> FINSI */
+            Si();
+            break;
+        
         default : return;
     }
 }
@@ -326,6 +333,25 @@ void Leer(REG_EXPRESION in){
 void Escribir(REG_EXPRESION out){
     /* Genera la instruccion para escribir */
     Generar("Write", Extraer(&out), "Entera", "");
+}
+void Si(void){
+    REG_EXPRESION cond;
+    char etiquetaFin[20];
+    static int numEtiqueta = 1;
+    sprintf(etiquetaFin, "L%d", numEtiqueta++);
+    Match(SI);
+    Match(PARENIZQUIERDO);
+    /* Analiza la condición */
+    Expresion(&cond);
+    Match(PARENDERECHO);
+    /* Si la condición es falsa, salta al final del bloque */
+    Generar("IfFalseGoto", Extraer(&cond), "", etiquetaFin);
+    /* Analiza las sentencias del bloque verdadero */
+    ListaSentencias();
+    Match(FINSI);
+    /* Marca el final del bloque */
+    Generar("Label", etiquetaFin, "", "");
+
 }
 
 REG_EXPRESION GenInfijo(REG_EXPRESION e1, char * op, REG_EXPRESION e2){
