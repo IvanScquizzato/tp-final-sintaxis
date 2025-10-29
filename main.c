@@ -53,6 +53,7 @@ void ListaExpresiones(void);
 void Expresion(REG_EXPRESION * presul);
 void Primaria(REG_EXPRESION * presul);
 void OperadorAditivo(char * presul);
+void OperadorRelacional(char * presul);
 REG_EXPRESION ProcesarCte(void);
 REG_EXPRESION ProcesarId(TipoDato tipo);
 char * ProcesarOp(void);
@@ -279,6 +280,17 @@ void OperadorAditivo(char * presul){
     /* <operadorAditivo> -> SUMA #procesar_op | RESTA #procesar_op */
     TOKEN t = ProximoToken();
     if ( t == SUMA || t == RESTA ){
+        Match(t);
+        strcpy(presul, ProcesarOp());
+    }
+    else
+        ErrorSintactico(t);
+}
+
+void OperadorRelacional(char * presul){
+    /* <operadorRelacional> -> MENOR | MAYOR | IGUAL | MENORIGUAL | MAYORIGUAL | DISTINTO */
+    TOKEN t = ProximoToken();
+    if ( t == MENOR || t == MAYOR || t == IGUAL || t == MENORIGUAL || t == MAYORIGUAL || t == DISTINTO ){
         Match(t);
         strcpy(presul, ProcesarOp());
     }
