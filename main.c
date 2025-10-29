@@ -381,7 +381,7 @@ void Pregunta(REG_EXPRESION * presul){
     Match(PARENIZQUIERDO);
     
     CaracterOExpresion(&op1);
-    //OperadorRelacional(op); 
+    OperadorRelacional(op); 
     CaracterOExpresion(&op2);
     
     Match(PARENDERECHO);
@@ -428,6 +428,12 @@ REG_EXPRESION GenInfijo(REG_EXPRESION e1, char * op, REG_EXPRESION e2){
     char cadOp[TAMLEX];
     if ( op[0] == '-' ) strcpy(cadOp, "Restar");
     if ( op[0] == '+' ) strcpy(cadOp, "Sumar");
+    if ( op[0] == '>' ) strcpy(cadOp, "CompararMayor");
+    if ( strcmp(op,">=")==0 ) strcpy(cadOp, "CompararMayorIgual");
+    if ( op[0] == '<' ) strcpy(cadOp, "CompararMenor");
+    if ( strcmp(op,"<=")==0  ) strcpy(cadOp, "CompararMenorIgual");
+    if ( strcmp(op,"==")==0  ) strcpy(cadOp, "CompararIgual");
+    if ( strcmp(op,"!=")==0  ) strcpy(cadOp, "CompararDistinto");
     sprintf(cadNum, "%d", numTemp);
     numTemp++;
     strcat(cadTemp, cadNum);
