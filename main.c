@@ -14,7 +14,7 @@ typedef enum{
     INICIO, FIN, LEER, ESCRIBIR, ID, CARACTER, PARENIZQUIERDO,
     PARENDERECHO, PUNTOYCOMA, COMA, ASIGNACION, SUMA, RESTA, FDT, ERRORLEXICO, MIENTRAS,
     FINMIENTRAS, SI, FINSI, REPETIRHASTA, FINREPETIRHASTA, MENOR, MAYOR, IGUAL, MENORIGUAL,
-    MAYORIGUAL, IGUALDAD, ENTERO, REAL,TIPO
+    MAYORIGUAL, IGUALDAD, DISTINTO, ENTERO, REAL,TIPO
 } TOKEN;
 typedef enum{
     ENT,REA,CAR
@@ -58,6 +58,7 @@ REG_EXPRESION ProcesarId(TipoDato tipo);
 char * ProcesarOp(void);
 void Leer(REG_EXPRESION in);
 void Escribir(REG_EXPRESION out);
+void Pregunta(REG_EXPRESION * presul);
 void Si(void);
 REG_EXPRESION GenInfijo(REG_EXPRESION e1, char * op, REG_EXPRESION e2);
 void Match(TOKEN t);
@@ -353,21 +354,51 @@ void Escribir(REG_EXPRESION out){
             break;
     }
 }
-void Si(void){
+
+void Pregunta(REG_EXPRESION * presul){
+    /* <pregunta> -> (<expresion> <comparacion> <expresion>) 
+                   | (<expresion> <comparacion> <caracter>) 
+                   | (<caracter> <comparacion> <expresion>) 
+       
+       Simplificado: (<caracterOExpresion> <comparacion> <caracterOExpresion>)
+    */
+    
+    REG_EXPRESION op1, op2;
+    char op[TAMLEX];
+    
+    Match(PARENIZQUIERDO);
+    
+    CaracterOExpresion(&op1);
+    OperadorRelacional(op); 
+    CaracterOExpresion(&op2);
+    
+    Match(PARENDERECHO);
+
+    *presul = GenInfijo(op1, op, op2);
+}
+
+void Si(void){ 
+    /* Gramática: SI <pregunta> ; <listaSentencias> FINSI ; */
     REG_EXPRESION cond;
     char etiquetaFin[20];
     static int numEtiqueta = 1;
     sprintf(etiquetaFin, "L%d", numEtiqueta++);
     Match(SI);
-    Match(PARENIZQUIERDO);
-    /* Analiza la condición */
-    Expresion(&cond);
-    Match(PARENDERECHO);
+    
+    /* Analiza la <pregunta> (que incluye los paréntesis) */
+    Pregunta(&cond);
+    Match(PUNTOYCOMA); 
+
     /* Si la condición es falsa, salta al final del bloque */
     Generar("IfFalseGoto", Extraer(&cond), "", etiquetaFin);
+    
     /* Analiza las sentencias del bloque verdadero */
     ListaSentencias();
+    
     Match(FINSI);
+    
+    Match(PUNTOYCOMA); 
+    
     /* Marca el final del bloque */
     Generar("Label", etiquetaFin, "", "");
 
