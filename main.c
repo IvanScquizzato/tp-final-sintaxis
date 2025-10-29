@@ -26,7 +26,7 @@ typedef struct{
 } RegTS;
 
 RegTS TS[1000] = { {"inicio", INICIO}, {"fin", FIN}, {"leer", LEER}, {"escribir", ESCRIBIR}, {"mientras", MIENTRAS}, {"finMientras", FINMIENTRAS}, {"si", SI},
-                {"finSi", FINSI}, {"repetirHasta", REPETIRHASTA}, {"finRepetirHasta", FINREPETIRHASTA}, {"ent", ENTERO}, {"real", REAL}, {"car", CARACTER},{"$", 99} };
+                {"finSi", FINSI}, {"repetirHasta", REPETIRHASTA}, {"finRepetirHasta", FINREPETIRHASTA}, {"ent", TIPO}, {"real", TIPO}, {"car", TIPO},{"$", 99} };
 
 typedef struct{
     TOKEN clase;
@@ -135,7 +135,7 @@ void ListaSentencias(void){
     Sentencia();
     while ( 1 ){
         switch ( ProximoToken() ){
-            case ID : case LEER : case ESCRIBIR : case SI :
+            case ID : case LEER : case ESCRIBIR : case SI : case TIPO:
             Sentencia();
             break;
             default : return;
