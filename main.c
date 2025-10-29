@@ -26,7 +26,7 @@ typedef struct{
 } RegTS;
 
 RegTS TS[1000] = { {"inicio", INICIO}, {"fin", FIN}, {"leer", LEER}, {"escribir", ESCRIBIR}, {"mientras", MIENTRAS}, {"finMientras", FINMIENTRAS}, {"si", SI},
-                {"finSi", FINSI}, {"repetirHasta", REPETIRHASTA}, {"finRepetirHasta", FINREPETIRHASTA}, {"ent", TIPO}, {"real", TIPO}, {"car", TIPO},{"$", 99} };
+                {"finSi", FINSI}, {"repetirHasta", REPETIRHASTA}, {"finRepetirHasta", FINREPETIRHASTA}, {"ent", TIPO,ENT}, {"real", TIPO,REA}, {"car", TIPO,CAR},{"$", 99} };
 
 typedef struct{
     TOKEN clase;
@@ -236,7 +236,7 @@ void Expresion(REG_EXPRESION * presul){
 void CaracterOExpresion(REG_EXPRESION * presul){
     /*<caracterOExpresion> -> uno de <expresion> <caracter>*/
     TOKEN tok = ProximoToken();
-    if (tok==CAR){
+    if (tok==CARACTER){
         Match(CARACTER);
         *presul = Caracter();
     }
@@ -369,7 +369,7 @@ void Pregunta(REG_EXPRESION * presul){
     Match(PARENIZQUIERDO);
     
     CaracterOExpresion(&op1);
-    OperadorRelacional(op); 
+    //OperadorRelacional(op); 
     CaracterOExpresion(&op2);
     
     Match(PARENDERECHO);
@@ -516,6 +516,7 @@ int Buscar(char * id, RegTS * TS, TOKEN * t,TipoDato* t2){
     /* Determina si un identificador esta en la TS */
     int i = 0;
     while ( strcmp("$", TS[i].identifi) ){
+        
         if ( !strcmp(id, TS[i].identifi) ){
             *t = TS[i].t;
             *t2 = TS[i].tipo;
@@ -549,7 +550,7 @@ TOKEN Chequear(char * s, TipoDato tipo){
         if (tipo == ENT){
             Generar("Declara", s, "Entera", "");
         }
-        else if (tipo == REAL){
+        else if (tipo == REA){
             Generar("Declara", s, "Real", "");
         }
         else if (tipo == CAR){
