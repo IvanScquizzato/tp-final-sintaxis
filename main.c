@@ -83,6 +83,8 @@ void Tipo(TipoDato * presul);
 void CaracterOExpresion(REG_EXPRESION * presul);
 int CondicionInfijo(REG_EXPRESION e1,REG_EXPRESION e2);
 void ErrorSemantico();
+void Repetir(void); 
+
 /***************************Programa Principal************************/
 int main(int argc, char * argv[]){
     TOKEN tok;
@@ -138,7 +140,7 @@ void ListaSentencias(void){
     Sentencia();
     while ( 1 ){
         switch ( ProximoToken() ){
-            case ID : case LEER : case ESCRIBIR : case SI : case MIENTRAS : case TIPO:
+            case ID : case LEER : case ESCRIBIR : case SI : case MIENTRAS : case TIPO: case REPETIRHASTA:
             Sentencia();
             break;
             default : return;
@@ -183,7 +185,12 @@ void Sentencia(void){
         case MIENTRAS: /* <sentencia> -> MIENTRAS <pregunta> ; <listaSentencias> FINMIENTRAS ; */
             Mientras();
             break;
+        case REPETIRHASTA :
+            Repetir();
+            break;
+
         default : return;
+
     }
 }
 
@@ -451,6 +458,34 @@ void Mientras(void){
 
     /* Marca el fin del ciclo */
     Generar("Label", etiquetaFin, "", "");
+}
+
+void Repetir(void){
+
+    REG_EXPRESION cond;
+    char etiquetaInicio[20];
+    static int numEtiqueta = 200; 
+    
+    sprintf(etiquetaInicio, "L%d", numEtiqueta++);
+    
+    Match(REPETIRHASTA);
+    
+    Generar("Label", etiquetaInicio, "", ""); // 1. Etiqueta de inicio de bucle
+    
+    ListaSentencias(); // 2. Cuerpo del bucle
+    
+    Match(FINREPETIRHASTA);
+    Match(PARENIZQUIERDO);
+    
+    Expresion(&cond); // 3. Evalúa la condición
+
+    Match(PARENDERECHO);
+
+    Match(PUNTOYCOMA);
+    
+    // "Repetir HASTA que" la condición sea VERDADERA.
+    // Significa: "Seguir en bucle (saltar al inicio) SI la condición es FALSA".
+    Generar("IfFalseGoto", Extraer(&cond), "", etiquetaInicio); // 4. Si es falso, vuelve a (1)
 }
 
 REG_EXPRESION GenInfijo(REG_EXPRESION e1, char * op, REG_EXPRESION e2){
