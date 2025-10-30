@@ -414,7 +414,7 @@ void Si(void){
     Match(PUNTOYCOMA); 
 
     /* Si la condición es falsa, salta al final del bloque */
-    Generar("IfFalseGoto", Extraer(&cond), "", etiquetaFin);
+    Generar("SiNoCumple", Extraer(&cond), "", etiquetaFin);
     
     /* Analiza las sentencias del bloque verdadero */
     ListaSentencias();
@@ -424,7 +424,7 @@ void Si(void){
     Match(PUNTOYCOMA); 
     
     /* Marca el final del bloque */
-    Generar("Label", etiquetaFin, "", "");
+    Generar("Etiqueta", etiquetaFin, "", "");
 
 }
 
@@ -447,7 +447,7 @@ void Mientras(void){
     Match(PUNTOYCOMA);
 
     /* Si la condición es falsa, salta al final del bucle */
-    Generar("Sino", Extraer(&cond), "", etiquetaFin);
+    Generar("SiNoCumple", Extraer(&cond), "", etiquetaFin);
 
     /* Cuerpo del ciclo */
     ListaSentencias();
@@ -472,7 +472,7 @@ void Repetir(void){
     
     Match(REPETIRHASTA);
     
-    Generar("Label", etiquetaInicio, "", ""); // 1. Etiqueta de inicio de bucle
+    Generar("Etiqueta", etiquetaInicio, "", ""); // 1. Etiqueta de inicio de bucle
     
     ListaSentencias(); // 2. Cuerpo del bucle
     
@@ -485,7 +485,7 @@ void Repetir(void){
     
     // "Repetir HASTA que" la condición sea VERDADERA.
     // Significa: "Seguir en bucle (saltar al inicio) SI la condición es FALSA".
-    Generar("IfFalseGoto", Extraer(&cond), "", etiquetaInicio); // 4. Si es falso, vuelve a (1)
+    Generar("SiNoCumple", Extraer(&cond), "", etiquetaInicio); // 4. Si es falso, vuelve a (1)
 }
 
 REG_EXPRESION GenInfijo(REG_EXPRESION e1, char * op, REG_EXPRESION e2){
