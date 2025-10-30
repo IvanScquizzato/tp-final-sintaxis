@@ -2,7 +2,7 @@
 #include <string.h>
 #include <ctype.h>
 
-#define NUMESTADOS 28
+#define NUMESTADOS 30
 #define NUMCOLS 18
 #define TAMLEX 32+1
 #define TAMNOM 20+1
@@ -49,7 +49,7 @@ void ListaSentencias(void);
 void Sentencia(void);
 void ListaIdentificadores(void);
 void Identificador(REG_EXPRESION * presul,TipoDato tipo);
-void ListaExpresiones(void);
+void ListaCaracterOExpresion(void);
 void Expresion(REG_EXPRESION * presul);
 void Primaria(REG_EXPRESION * presul);
 void OperadorAditivo(char * presul);
@@ -172,10 +172,10 @@ void Sentencia(void){
             Match(PARENDERECHO);
             Match(PUNTOYCOMA);
             break;
-        case ESCRIBIR : /* <sentencia> -> ESCRIBIR ( <listaExpresiones> ) */
+        case ESCRIBIR : /* <sentencia> -> ESCRIBIR ( <listaCaracterOExpresion> ) */
             Match(ESCRIBIR);
             Match(PARENIZQUIERDO);
-            ListaExpresiones();
+            ListaCaracterOExpresion();
             Match(PARENDERECHO);
             Match(PUNTOYCOMA);
             break;
@@ -217,15 +217,15 @@ void Tipo(TipoDato * presul){
     *presul = ProcesarTipo();
 }
 
-void ListaExpresiones(void){
-    /* <listaExpresiones> -> <expresion> #escribir_exp {COMA <expresion> #escribir_exp} */
+void ListaCaracterOExpresion(void){
+    /* <listaCaracterOExpresion> -> <caracterOExpresion> #escribir_exp {COMA <caracterOExpresion> #escribir_exp} */
     TOKEN t;
     REG_EXPRESION reg;
-    Expresion(&reg);
+    CaracterOExpresion(&reg);
     Escribir(reg);
     for ( t = ProximoToken(); t == COMA; t = ProximoToken() ){
         Match(COMA);
-        Expresion(&reg);
+        CaracterOExpresion(&reg);
         Escribir(reg);
     }
 }
@@ -247,6 +247,7 @@ void Expresion(REG_EXPRESION * presul){
 void CaracterOExpresion(REG_EXPRESION * presul){
     /*<caracterOExpresion> -> uno de <expresion> <caracter>*/
     TOKEN tok = ProximoToken();
+    //printf("El toker es: %d\n",tok);
     if (tok==CARACTER){
         Match(CARACTER);
         *presul = Caracter();
@@ -259,6 +260,7 @@ void CaracterOExpresion(REG_EXPRESION * presul){
 REG_EXPRESION Caracter(){
     REG_EXPRESION reg;
     reg.clase=CARACTER;
+    reg.tipo=CAR;
     strcpy(reg.nombre,buffer);
     sscanf(buffer,"%c",&reg.valor);
     return reg;
@@ -475,11 +477,9 @@ void Repetir(void){
     ListaSentencias(); // 2. Cuerpo del bucle
     
     Match(FINREPETIRHASTA);
-    Match(PARENIZQUIERDO);
     
-    Expresion(&cond); // 3. Evalúa la condición
+    Pregunta(&cond); // 3. Evalúa la condición
 
-    Match(PARENDERECHO);
 
     Match(PUNTOYCOMA);
     
@@ -491,6 +491,7 @@ void Repetir(void){
 REG_EXPRESION GenInfijo(REG_EXPRESION e1, char * op, REG_EXPRESION e2){
     /* Genera la instruccion para una operacion infija y construye un registro semantico con el resultado*/
     if (CondicionInfijo(e1,e2)==0){
+        //printf("hola %d %d\n",e1.tipo,e2.clase);
         ErrorSemantico();
     }
     REG_EXPRESION reg;
@@ -531,9 +532,6 @@ TipoDato DecidirTipo(REG_EXPRESION e1,REG_EXPRESION e2){
     }
 }
 int CondicionInfijo(REG_EXPRESION e1,REG_EXPRESION e2){
-    if ((e1.clase==ID && e1.tipo==CAR) || (e2.clase==ID && e2.tipo==CAR)){
-        return 0;
-    }
     if(e1.clase !=e2.clase){
         if(e1.clase!=ID&&e2.clase!=ID){
             return 0;
@@ -545,12 +543,18 @@ int CondicionInfijo(REG_EXPRESION e1,REG_EXPRESION e2){
             if (e1.tipo==REA && e2.clase !=REAL){
                 return 0;
             }
+            if (e1.tipo==CAR && e2.clase !=CARACTER){
+                return 0;
+            }
         }
         if (e2.clase == ID){
             if (e2.tipo==ENT && e1.clase !=ENTERO){
                 return 0;
             }
             if (e2.tipo==REA && e1.clase !=REAL){
+                return 0;
+            }
+            if (e2.tipo==CAR && e1.clase !=CARACTER){
                 return 0;
             }
         }
@@ -561,6 +565,7 @@ int CondicionInfijo(REG_EXPRESION e1,REG_EXPRESION e2){
         }
     }
     return 1;
+
 }
 /***************Funciones Auxiliares**********************************/
 void Match(TOKEN t){
@@ -673,7 +678,7 @@ TOKEN scanner() {
     // Filas: estados
     // Columnas: tipos de carácter
     int tabla[NUMESTADOS][NUMCOLS] = {
-        { 1, 3, 5, 6, 7, 8, 9, 10, 11, 14, 13, 0, 15,16,14,21 ,23,14},
+        { 1, 3, 5, 6, 7, 8, 9, 10, 11, 28, 13, 0, 15,16,14,21 ,23,14},
         { 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,2,2 ,2,14,14},
         { 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14,14,14, 14, 14,14 ,14,14},
         { 4, 3, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,14,14, 4,14,14,26 },
@@ -696,10 +701,12 @@ TOKEN scanner() {
        { 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14,14,14, 14,14 ,14,14},
        { 14, 14, 14, 14, 14, 14, 14, 14, 14, 22, 14, 14,14,14, 14,14 ,14,14},
        { 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14,14,14, 14,14 ,14,14},
-        { 24, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14,14,14, 14,14 ,14,14},
+        { 24, 24, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14,14,14, 14,14 ,14,14},
         { 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14,14,14, 14,14 ,25,14},
         { 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14,14,14, 14,14 ,14,14},
-        { 14, 27, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14,14,14, 14,14 ,14,14},
+        { 27, 26, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27,27,27, 27,27 ,27,27},
+        { 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14,14,14, 14,14 ,14,14},
+        { 14, 14, 14, 14, 14, 14, 14, 14, 14, 29, 14, 14,14,14, 14,14 ,14,14},
         { 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14,14,14, 14,14 ,14,14}
     };
 
@@ -722,7 +729,7 @@ TOKEN scanner() {
     buffer[i] = '\0'; // Terminar string
 
     // Dependiendo del estado final, determinar token
-    //printf("toker %d\n",estado);
+    //printf("token %d\n",estado);
     switch (estado) {
         case 2: // Identificador o palabra reservada
             if (col != 11) {
@@ -763,7 +770,13 @@ TOKEN scanner() {
             return MENOR;
         case 22: return DISTINTO;
         case 25: return CARACTER;
-        case 27: return REAL;
+        case 27: 
+            if (col != 11) {
+                ungetc(car, in); // Devolver el último carácter leído
+                buffer[i-1] = '\0';
+            }
+        return REAL;
+        case 29: return IGUAL;
     }
 
     return 0; // Retorno por defecto
@@ -771,7 +784,7 @@ TOKEN scanner() {
 
 // Devuelve 1 si el estado es final, 0 si no
 int estadoFinal(int e) {
-    if (e == 0 || e == 1 || e == 3 || e == 11 || e == 14 || e == 15 || e==16 || e==21 || e==23 || e==24 || e==26) return 0;
+    if (e == 0 || e == 1 || e == 3 || e == 11 || e == 14 || e == 15 || e==16 || e==21 || e==23 || e==24 || e==26 || e==28) return 0;
     return 1;
 }
 
