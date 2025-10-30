@@ -1,8 +1,9 @@
 inicio
-ent x;
-leer(x);
-mientras(x>0);
-escribir(x);
-x := x - 1;
+real f;
+si(x>0);
+ent z;
+finSi;
+mientras(f!=2.2);
+ent hola;
 finMientras;
 fin
