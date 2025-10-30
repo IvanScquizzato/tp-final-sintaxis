@@ -440,14 +440,14 @@ void Mientras(void){
     Match(MIENTRAS);
 
     /* Marca el inicio del ciclo */
-    Generar("Label", etiquetaInicio, "", "");
+    Generar("Etiqueta", etiquetaInicio, "", "");
 
     /* Evalúa la condición */
     Pregunta(&cond);
     Match(PUNTOYCOMA);
 
     /* Si la condición es falsa, salta al final del bucle */
-    Generar("IfFalseGoto", Extraer(&cond), "", etiquetaFin);
+    Generar("Sino", Extraer(&cond), "", etiquetaFin);
 
     /* Cuerpo del ciclo */
     ListaSentencias();
@@ -456,10 +456,10 @@ void Mientras(void){
     Match(PUNTOYCOMA);
 
      /* Salto al inicio del ciclo */
-    Generar("Goto", etiquetaInicio, "", "");
+    Generar("IrA", etiquetaInicio, "", "");
 
     /* Marca el fin del ciclo */
-    Generar("Label", etiquetaFin, "", "");
+    Generar("Etiqueta", etiquetaFin, "", "");
 }
 
 void Repetir(void){
