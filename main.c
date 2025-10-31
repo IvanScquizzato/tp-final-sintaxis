@@ -247,7 +247,6 @@ void Expresion(REG_EXPRESION * presul){
 void CaracterOExpresion(REG_EXPRESION * presul){
     /*<caracterOExpresion> -> uno de <expresion> <caracter>*/
     TOKEN tok = ProximoToken();
-    //printf("El toker es: %d\n",tok);
     if (tok==CARACTER){
         Match(CARACTER);
         *presul = Caracter();
@@ -271,11 +270,11 @@ void Primaria(REG_EXPRESION * presul){
     case ID : /* <primaria> -> <identificador> */
         Identificador(presul,ENT);
         break;
-    case ENTERO : /* <primaria> -> CONSTANTE #procesar_cte */
+    case ENTERO : /* <primaria> -> <entero> #procesar_cte */
         Match(ENTERO);
         *presul = ProcesarCte();
         break;
-    case REAL:
+    case REAL: /*<primaria> -> <real>*/
         Match(REAL);
         *presul = ProcesarReal();
         break;
@@ -491,7 +490,6 @@ void Repetir(void){
 REG_EXPRESION GenInfijo(REG_EXPRESION e1, char * op, REG_EXPRESION e2){
     /* Genera la instruccion para una operacion infija y construye un registro semantico con el resultado*/
     if (CondicionInfijo(e1,e2)==0){
-        //printf("hola %d %d\n",e1.tipo,e2.clase);
         ErrorSemantico();
     }
     REG_EXPRESION reg;
@@ -719,7 +717,6 @@ TOKEN scanner() {
         car = fgetc(in);        // Leer siguiente carácter del archivo
         col = columna(car);     // Determinar tipo de carácter (letra, número, operador, etc.)
         estado = tabla[estado][col]; // Avanzar al siguiente estado
-        //printf("estado: %d\n",estado);
         // Si no es espacio, agregar al buffer
         if (col != 11) {
             buffer[i++] = car;
@@ -729,7 +726,6 @@ TOKEN scanner() {
     buffer[i] = '\0'; // Terminar string
 
     // Dependiendo del estado final, determinar token
-    //printf("token %d\n",estado);
     switch (estado) {
         case 2: // Identificador o palabra reservada
             if (col != 11) {
@@ -801,12 +797,12 @@ int columna(int c) {
     if (c == ':') return 8;
     if (c == '=') return 9;
     if (c == EOF) return 10;
-    if (isspace(c)) return 11; 
+    if (isspace(c)) return 11; // Espacios y saltos de línea
     if(c == '>') return 12;
     if (c=='<') return 13;
     if (c=='!') return 15;
     if (c=='\'') return 16;
     if(c=='.') return 17;
-        // Espacios y saltos de línea
+        
     return 14;                      // Cualquier otro símbolo
 }
